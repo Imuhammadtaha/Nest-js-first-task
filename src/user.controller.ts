@@ -1,137 +1,124 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Res } from '@nestjs/common';
+import { UsersService } from './user.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import express from 'express';
 
 @Controller('users')
 export class UserController {
-  private users = [{ id: 1, name: 'Muhammad Taha', email: 'taha@taha.com' }];
+  constructor(private readonly usersService: UsersService) {}
 
-  @Get('')
-  getAllStudent(@Res() res: express.Response) {
+  @Get()
+  getAllUsers(@Res() res: express.Response) {
     try {
+      const users = this.usersService.findAll();
       return res.status(HttpStatus.OK).send({
         success: true,
-        message: 'User Fetched Successfully',
-        data: this.users,
+        message: 'Users fetched successfully',
+        data: users,
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
         success: false,
-        message: 'Error in fetching user',
+        message: 'Error in fetching users',
       });
     }
   }
 
   @Get(':id')
-  getStudentById(@Param('id') id: string, @Res() res: express.Response) {
+  getUserById(@Param('id') id: string, @Res() res: express.Response) {
     try {
-      const user = this.users.find((u) => u.id === +id);
-      if (!user) {
-        return res.status(HttpStatus.NOT_FOUND).send({
-          success: false,
-          message: 'User not found',
-        });
-      }
+      const user = this.usersService.findOne(+id);
       return res.status(HttpStatus.OK).send({
         success: true,
-        message: 'User Fetched',
+        message: 'User fetched successfully',
         data: user,
       });
-    } catch (error) {
-      console.log(error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+    } catch (error: unknown) {
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? (error as { status?: number }).status
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message?: string }).message
+          : 'Error in fetching user';
+      return res.status(status || HttpStatus.INTERNAL_SERVER_ERROR).send({
         success: false,
-        message: 'Error in fetching user',
+        message,
       });
     }
   }
+
   @Post()
-  createUser(
-    @Body() newUser: { name: string; email: string },
-    @Res() res: express.Response,
-  ) {
+  createUser(@Body() newUser: CreateUserDto, @Res() res: express.Response) {
     try {
-      if (!newUser.email || !newUser.name) {
-        return res.status(HttpStatus.BAD_REQUEST).send({
-          success: false,
-          message: 'Email and Name are mandatory',
-        });
-      }
-      const id = this.users.length + 1;
-      const user = { id, ...newUser };
-      this.users.push(user);
-      return res.status(HttpStatus.OK).send({
+      const user = this.usersService.create(newUser);
+      return res.status(HttpStatus.CREATED).send({
         success: true,
-        message: 'User Created Successfully',
+        message: 'User created successfully',
         data: user,
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
         success: false,
         message: 'Error in creating user',
       });
     }
   }
-  @Post(':id')
-  updateStudent(
+
+  @Put(':id')
+  updateUser(
     @Param('id') id: string,
-    @Body() newUser: { name: string; email: string },
+    @Body() updatedUser: UpdateUserDto,
     @Res() res: express.Response,
   ) {
     try {
-      const index = this.users.findIndex((u) => u.id === +id);
-      if (index === -1) {
-        return res.status(HttpStatus.BAD_REQUEST).send({
-          success: false,
-          message: 'User Not Found',
-        });
-      }
-      this.users[index] = { id: +id, ...newUser };
+      const user = this.usersService.update(+id, updatedUser);
       return res.status(HttpStatus.OK).send({
         success: true,
-        message: 'User Updated Successfully',
-        data: this.users[index],
+        message: 'User updated successfully',
+        data: user,
       });
-    } catch (error) {
-      console.log(error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+    } catch (error: unknown) {
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? (error as { status?: number }).status
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message?: string }).message
+          : 'Error in updating user';
+      return res.status(status || HttpStatus.INTERNAL_SERVER_ERROR).send({
         success: false,
-        message: 'Error in updation',
+        message,
       });
     }
   }
+
   @Delete(':id')
-  deleteStuden(@Param('id') id: string, @Res() res: express.Response) {
+  deleteUser(@Param('id') id: string, @Res() res: express.Response) {
     try {
-      console.log(`Id = ${id}`);
-      const index = this.users.findIndex((u) => u.id === +id);
-      if (index === -1) {
-        return res.status(HttpStatus.BAD_REQUEST).send({
-          success: false,
-          message: 'User Not Found',
-        });
-      }
-      const deleted = this.users.splice(index, 1);
+      const user = this.usersService.delete(+id);
       return res.status(HttpStatus.OK).send({
         success: true,
-        message: 'User Deleted Successfully',
-        data: deleted[0],
+        message: 'User deleted successfully',
+        data: user,
       });
     } catch (error) {
-      console.log(error);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? (error as { status?: number }).status
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message?: string }).message
+          : 'Error in deleting user';
+      return res.status(status || HttpStatus.INTERNAL_SERVER_ERROR).send({
         success: false,
-        message: 'Error in deletion',
+        message,
       });
     }
   }

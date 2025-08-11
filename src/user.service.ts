@@ -26,7 +26,7 @@ export class UsersService {
   update(id: number, dto: UpdateUserDto) {
     const index = this.users.findIndex((u) => u.id === id);
     if (index === -1) throw new NotFoundException('User not found');
-    this.users[index] = { id, ...dto };
+    this.users[index] = { ...this.users[index], ...dto, id };
     return this.users[index];
   }
 
